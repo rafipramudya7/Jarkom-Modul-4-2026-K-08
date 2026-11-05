@@ -1,9 +1,16 @@
-# Rangkuman Konfigurasi GNS3 (Metode CIDR)
+# Rangkuman Konfigurasi GNS3 \
+## Metode CIDR
 
+## Penggabungan map 
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-5.png)
+![alt text](image-6.png)
+![alt text](image-7.png)
 - **Prefix IP:** 192.215.0.0 (blok total 192.215.0.0/19)
-- **Template node:** Docker/VM Debian
-- **Metode GNS3:** CIDR (CPT memakai VLSM)
-- **Router:** 13, **Switch:** 13, **Host:** 25, **Subnet:** 25
 
 ## 1. Tabel Rute Dasar
 
@@ -36,15 +43,11 @@
 | A25 | Shibuya > Switch13 > Lain, Mika | 62 | /26 |
 | **Total** | | **4188** | **/19** |
 
-Keterangan: Jumlah IP = host + interface router di subnet itu. Netmask = blok terkecil yang muat untuk (Jumlah IP + 2). Total = jumlah ukuran blok semua subnet (4188 > 4096, maka /19).
-
-Format rute: `Router > Router`, `Router > Switch > Router, Router, Node`, `Router > Switch > Node, Node`, `Router > Node (tanpa switch)`.
 
 ## 2. Penggabungan CIDR
 
-Netmask akhir = jumlah ukuran blok kedua gabungan, dibulatkan ke pangkat 2. Penggabungan mengikuti cabang router supaya satu route summary mewakili satu cabang.
 
-### I (hasil: B)
+### B
 
 | Subnet | Gabungan (1) Subnet | Netmask | Gabungan (2) Subnet | Netmask | Netmask Akhir |
 |---|---|---|---|---|---|
@@ -57,7 +60,7 @@ Netmask akhir = jumlah ukuran blok kedua gabungan, dibulatkan ke pangkat 2. Peng
 | B7 | A7 (Copland > Juri) | /26 | A8 (Copland > Switch4) | /23 | /22 |
 | B8 | A1 (Cyberia > Switch1) | /25 | A2 (Cyberia > Wired) | /30 | /24 |
 
-### II (hasil: C)
+### C
 
 | Subnet | Gabungan (1) Subnet | Netmask | Gabungan (2) Subnet | Netmask | Netmask Akhir |
 |---|---|---|---|---|---|
@@ -67,7 +70,7 @@ Netmask akhir = jumlah ukuran blok kedua gabungan, dibulatkan ke pangkat 2. Peng
 | C4 | B5 | /25 | B6 | /23 | /22 |
 | C5 | A6 (Psyche > Switch3) | /22 | B7 | /22 | /21 |
 
-### III (hasil: D)
+### D
 
 | Subnet | Gabungan (1) Subnet | Netmask | Gabungan (2) Subnet | Netmask | Netmask Akhir |
 |---|---|---|---|---|---|
@@ -75,7 +78,7 @@ Netmask akhir = jumlah ukuran blok kedua gabungan, dibulatkan ke pangkat 2. Peng
 | D2 | C2 | /28 | A17 (Deus > Switch10) | /25 | /24 |
 | D3 | C3 | /27 | A11 (Accola > Switch5) | /22 | /21 |
 
-### IV dan seterusnya (hasil: E sampai K)
+### bebas
 
 | Subnet | Gabungan (1) Subnet | Netmask | Gabungan (2) Subnet | Netmask | Netmask Akhir |
 |---|---|---|---|---|---|
@@ -88,7 +91,6 @@ Netmask akhir = jumlah ukuran blok kedua gabungan, dibulatkan ke pangkat 2. Peng
 | J1 | B8 | /24 | I1 | /21 | /20 |
 | K1 | E2 | /20 | J1 | /20 | /19 |
 
-Hasil akhir **K1 = 192.215.0.0/19** (192.215.0.0 - 192.215.31.255). Semua 25 subnet terpakai tepat sekali dalam 24 penggabungan.
 
 ## 3. Pembagian IP CIDR
 
@@ -195,8 +197,6 @@ Hasil akhir **K1 = 192.215.0.0/19** (192.215.0.0 - 192.215.31.255). Semua 25 sub
 
 ## 6. Routing
 
-Prinsip: router ujung memakai **default route** ke atas, router yang punya cabang di belakangnya memakai **route summary** hasil penggabungan CIDR.
-
 | Router | Tujuan | Next hop | Mewakili |
 |---|---|---|---|
 | Cyberia | 192.215.0.0/20 | 192.215.24.130 | Sisi barat (A3, A6-A11) |
@@ -223,31 +223,10 @@ Prinsip: router ujung memakai **default route** ke atas, router yang punya caban
 | Phantoma | default | 192.215.21.161 | Knights |
 | Shibuya | default | 192.215.21.165 | Phantoma |
 
-Cyberia memakai DHCP di eth0 (NAT), sehingga default route ke internet didapat otomatis. Cyberia juga memasang MASQUERADE agar host bisa ping internet.
+## Hasil Pengujian
 
-## 7. Cara memakai skrip .sh
-
-Setiap node punya satu file di folder `scripts/` (contoh `scripts/Wired.sh`). Isinya menulis `/etc/network/interfaces` lalu langsung menerapkan IP dan routing.
-
-1. Buka console node di GNS3.
-2. Salin seluruh isi file `.sh` node tersebut, tempel di console, tekan Enter.
-3. Atau, jika file sudah ada di node: `bash NAMA.sh`.
-4. Cek dengan `ip -4 addr`, `ip route`, lalu `ping`.
-
-Pemetaan eth mengikuti kabel yang kamu pasang (lihat tabel bagian 4). Kalau kabelmu berbeda, ubah nama interface di skrip.
-
-## 8. Daftar skrip
-
-Router: `Cyberia.sh`, `Wired.sh`, `Psyche.sh`, `Copland.sh`, `Schwann.sh`, `Accola.sh`, `Navi.sh`, `Tachibana.sh`, `Deus.sh`, `Protocol7.sh`, `Knights.sh`, `Phantoma.sh`, `Shibuya.sh`
-
-Host: `JJ.sh`, `MyuMyu.sh`, `Karl.sh`, `Lin.sh`, `Juri.sh`, `Masayuki.sh`, `Akasic.sh`, `Omnipresence.sh`, `Denpa.sh`, `Alice.sh`, `Raika.sh`, `Taro.sh`, `Yasuo.sh`, `Miho.sh`, `Kuma.sh`, `Collective.sh`, `Ghost.sh`, `Lilith.sh`, `Specter.sh`, `Chisa.sh`, `Hodgeson.sh`, `Erl.sh`, `Semi.sh`, `Lain.sh`, `Mika.sh`
-
-## 9. Hasil pengujian
-- Ping antar router dan ke host lintas cabang berhasil (TTL sesuai jumlah hop).
-- Mika ke JJ, Karl, Omnipresence, Yasuo, Lain berhasil.
-- JJ, Lilith, Cyberia ke 8.8.8.8 berhasil.
-
-## 10. Catatan
-- Nama node di GNS3: Schwann sempat terbaca Schuman dan Accola terbaca Accela, rename jika perlu.
-- Aturan iptables tidak persisten; jalankan ulang `Cyberia.sh` jika Cyberia di-restart.
-- Total di tabel rute dasar adalah jumlah ukuran blok (4188), bukan penjumlahan kolom Jumlah IP.
+![alt text](image-8.png)
+![alt text](image-9.png)
+![alt text](image-10.png)
+![alt text](image-11.png)
+![alt text](image-12.png)
