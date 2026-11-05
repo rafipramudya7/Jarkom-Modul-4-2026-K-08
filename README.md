@@ -1,4 +1,4 @@
-# Rangkuman Konfigurasi GNS3 \
+# Rangkuman Konfigurasi GNS3 
 ## Metode CIDR
 
 ## Penggabungan map 
